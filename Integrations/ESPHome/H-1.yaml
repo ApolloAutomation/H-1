@@ -193,6 +193,5 @@ script:
       - delay: 5s
       - light.turn_off: rgb_light
 
-
 packages:
   core: !include Core.yaml
