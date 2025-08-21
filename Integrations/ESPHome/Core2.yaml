@@ -61,7 +61,6 @@ deep_sleep:
       - number: GPIO7
         allow_other_uses: true
 
-
 switch:
   - platform: factory_reset
     id: factory_reset_switch
@@ -104,6 +103,12 @@ button:
     on_press:
       then:
         - script.execute: play_song_3
+  - platform: template
+    id: btn_play_song_4
+    name: "Play Song 4"
+    on_press:
+      then:
+        - script.execute: play_song_4
 
 number:
   - platform: template
@@ -139,7 +144,7 @@ number:
 
 text:
   - platform: template
-    name: "Song Single Click"
+    name: "Song Text 1"
     id: song_1
     icon: mdi:music-note
     entity_category: "config"
@@ -148,7 +153,7 @@ text:
     optimistic: true
     initial_value: "jingle:d=4,o=5,b=125:8g,8e6,8d6,8c6,2g,8g,8e6,8d6,8c6,2a,8a,8f6,8e6,8d6,8b,8g,8b,8d6,8g.6,8g6,8f6,8d6,2e6,8g,8e6,8d6,8c6,2g,8f#6,8g6,8e6,8d6,8c6,2a,8a,8f6,8e6,8d6,8g6,8g6,8f6,8g6,8f6,8g6,8g#6,8a.6,8g6,8e6,8d6,8c6,8g6,8e6,8e6,8e.6,8d#6,8e6,8e6,8e.6,8d#6,8e6,8g6,8c.6,8d6,2e6,8f6,8f6,8f.6,8f6,8f6,8e6,8e6,8e6,8e6,8e6,8d6,8d6,8e6,2d6;"
   - platform: template
-    name: "Song Double Click"
+    name: "Song Text 2"
     id: song_2
     icon: mdi:music-note
     entity_category: "config"
@@ -157,7 +162,7 @@ text:
     optimistic: true
     initial_value: "rudolph:d=4,o=5,b=125:8g.,16a,8p,16g.,e,c6,a,2g.,8g.,16a,8g.,16a,g,c6,1b,8f.,16g,8p,16f.,d,b,a,2g.,8g.,16a,8g.,16a,g,a,1e,8g.,16a,8p,16g.,e,c6,a,1g,8g.,16a,8g.,16a,g,c6,1b,8f.,16g,8p,16f.,d,b,a,1g,8g.,16a,8g.,16a,g,d6;"
   - platform: template
-    name: "Song Long Click"
+    name: "Song Text 3"
     id: song_3
     icon: mdi:music-note
     entity_category: "config"
@@ -165,6 +170,15 @@ text:
     mode: text
     optimistic: true
     initial_value: "snow:d=4,o=5,b=125:8c,8c,8c6,8c6,a#,a,g,f,2c,8c,16c,g.,8f,g.,8f,e,2c,d,8d6,8d6,c6,a#,a,2g.,8e.6,16d6,c6,8c.6,16a#,a,8a#.,16a,2f.,c,8c6,8c6,a#,a,g,f,2c,8c.,16c,g.,8f,g.,8f,e,2c,d,8d6,8d6,c6,a#,a,2g.,8e.6,16d6,c6,8c.6,16a#,a,8a.,16g,2f.;"
+  - platform: template
+    name: "Song Text 4"
+    id: song_4
+    icon: mdi:music-note
+    entity_category: "config"
+    restore_value: true
+    mode: text
+    optimistic: true
+    initial_value: "whitechristmas:d=4,o=5,b=125:8c,8c,8d,8c,b4,8a4,8a4,8b4,8a4,g4,2c,8c,8d,8e,8f,2g,8g,8a,8g,f,8e,8e,8f,8e,d,2c,8c,8d,8e,8f,2g,8g,8a,8g,f,8e,8e,8f,8e,d,1c"
 
 binary_sensor:
   - platform: gpio
@@ -201,6 +215,7 @@ binary_sensor:
               id(testScript).execute();
             }
 
+  # H-2 Individual Song Buttons (4 buttons)
   - platform: gpio
     id: back_button_1
     pin:
@@ -210,10 +225,11 @@ binary_sensor:
         input: true
         pullup: true
       allow_other_uses: true
-    internal: true
+    name: "Song Button 1"
     on_release:
       then:
         - script.execute: play_song_1
+
   - platform: gpio
     id: back_button_2
     pin:
@@ -223,10 +239,11 @@ binary_sensor:
         input: true
         pullup: true
       allow_other_uses: true
-    internal: true
+    name: "Song Button 2"
     on_release:
       then:
         - script.execute: play_song_2
+
   - platform: gpio
     id: back_button_3
     pin:
@@ -236,10 +253,11 @@ binary_sensor:
         input: true
         pullup: true
       allow_other_uses: true
-    internal: true
+    name: "Song Button 3"
     on_release:
       then:
         - script.execute: play_song_3
+
   - platform: gpio
     id: back_button_4
     pin:
@@ -249,7 +267,7 @@ binary_sensor:
         input: true
         pullup: true
       allow_other_uses: true
-    internal: true
+    name: "Song Button 4"
     on_release:
       then:
         - script.execute: play_song_4
@@ -275,7 +293,6 @@ sensor:
         - lambda: |
             if (x > 100) return 100;
             else return (x);
-
 
 light:
   - platform: esp32_rmt_led_strip
@@ -376,7 +393,32 @@ light:
 
             // Switch the color cycle after each update (1 second)
             red_green_cycle = !red_green_cycle;
+      - addressable_lambda:
+          name: "BlueGold"
+          update_interval: 1000ms  # Switch colors every second
+          lambda: |-
+            // Keep track of the current color cycle using a flag
+            static bool blue_gold_cycle = true;
+            
+            for (int i = 0; i < it.size(); i++) {
+              // Alternate between blue and gold for each LED
+              if (i % 2 == 0) {
+                if (blue_gold_cycle) {
+                  it[i] = Color(0, 100, 255);  // Blue
+                } else {
+                  it[i] = Color(255, 215, 0);  // Gold
+                }
+              } else {
+                if (blue_gold_cycle) {
+                  it[i] = Color(255, 215, 0);  // Gold
+                } else {
+                  it[i] = Color(0, 100, 255);  // Blue
+                }
+              }
+            }
 
+            // Switch the color cycle after each update (1 second)
+            blue_gold_cycle = !blue_gold_cycle;
 
 script:
   - id: play_song_1
@@ -429,14 +471,15 @@ script:
           then:
             - deep_sleep.enter:
                 id: deep_sleep_1
+
   - id: play_song_4
     then:
       - light.turn_on:
           brightness: 40%
           id: rgb_light
-          effect: "RedGreen"
+          effect: "BlueGold"
       - rtttl.play:
-          rtttl: !lambda 'return id(song_3).state;'
+          rtttl: !lambda 'return id(song_4).state;'
       - delay: 30s
       - light.turn_off: rgb_light
       - if:
