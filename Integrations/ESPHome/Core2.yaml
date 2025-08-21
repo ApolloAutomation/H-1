@@ -132,6 +132,7 @@ number:
 
   - platform: template
     name: Volume
+    id: volume_control
     min_value: 0
     max_value: 100
     initial_value: 100
