@@ -12,9 +12,7 @@ jobs:
       matrix:
         file:
           - Integrations/ESPHome/H-1.yaml
-          - Integrations/ESPHome/H-2.yaml
           - Integrations/ESPHome/H-1D.yaml
-          - Integrations/ESPHome/H-2D.yaml
         esphome-version:
           - stable
           - beta

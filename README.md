@@ -14,7 +14,7 @@
 
 - **[CASA of Lexington](https://casaoflexington.org/)** - Advocates for children in the family court system
 
-- **[Open Home Foundation](https://www.openhomefoundation.org/)** - Supports Home Assistant and the open source mission
+- **[Open Home Foundation](https://www.openhomefoundation.org/)** - Apollo Automation is proud to back the Open Home Foundation. A portion of profits from every H-2 sold helps protect the values of privacy, choice, and sustainability in the smart home by supporting open source projects like Home Assistant and open connectivity standards.
 
 ## Links
 

@@ -26,10 +26,8 @@ jobs:
       device-name: h-1
       yaml-files: |
         Integrations/ESPHome/H-1.yaml
-        Integrations/ESPHome/H-2.yaml
         Integrations/ESPHome/H-1D.yaml
-        Integrations/ESPHome/H-2D.yaml
-      firmware-names: "1:firmware,2:firmware2,1D:firmare-d,2D:firmware-2d"
+      firmware-names: "1:firmware,1D:firmare-d"
       core-yaml-path: Integrations/ESPHome/Core.yaml
       esphome-version: stable
       # Bypass check if manually triggered with bypass option
