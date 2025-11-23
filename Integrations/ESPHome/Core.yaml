@@ -1,5 +1,5 @@
 substitutions:
-  version: "25.11.6.1"
+  version: "25.11.23.1"
 
 esp32:
   board: esp32-c3-devkitm-1
@@ -37,8 +37,6 @@ globals:
 external_components:
   - source: github://ApolloAutomation/esphome-battery-component
     components: [max17048] #Forked OptionZero
-  - source: github://pr#7793
-    components: rtttl
 
 i2c:
   sda: GPIO1
