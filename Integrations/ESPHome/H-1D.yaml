@@ -1,22 +1,20 @@
 esphome:
-  name: "${name}"
-  friendly_name: Apollo H-1
-  comment: Apollo H-1
+  name: "apollo-h-1d"
+  friendly_name: Apollo H-1D
+  comment: Apollo H-1D
   name_add_mac_suffix: true
   platformio_options:
     board_build.flash_mode: dio
 
   project:
-    name: "ApolloAutomation.H-1"
+    name: "ApolloAutomation.H-1D"
     version: "${version}"
 
   min_version: 2023.11.1
   on_boot:
     - priority: 500
       then:
-        - switch.turn_on: accessory_power
         - lambda: |-
-            id(deep_sleep_1).set_run_duration(id(deep_sleep_run_duration).state * 1000);
             id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 60 * 1000);
         - if:
             condition:
@@ -34,26 +32,26 @@ esphome:
               - lambda: "id(testScript).execute();"
   on_shutdown:
     - light.turn_off: rgb_light
-    - switch.turn_off: accessory_power
 
 safe_mode:
+
+logger:
 
 switch:
   - platform: template
     name: "Prevent Sleep"
     id: prevent_sleep
     icon: mdi:sleep
-    restore_mode: RESTORE_DEFAULT_OFF
+    restore_mode: ALWAYS_OFF
     optimistic: true
     entity_category: "config"
-
 
 script:
   - id: statusCheck
     then:
       - light.turn_on: 
           id: rgb_light
-          brightness: 100%
+          brightness: 40%
           red: 0%
           green: 100%
           blue: 0%
