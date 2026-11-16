@@ -21,8 +21,15 @@ concurrency:
   group: build-and-publish-pages
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   build-and-publish:
+    # Only main publishes. A manual run dispatched from another branch would
+    # otherwise replace the live Stable manifests (and the legacy copy below)
+    # with that branch's build.
+    if: github.ref == 'refs/heads/main'
     uses: ApolloAutomation/Workflows/.github/workflows/build.yml@main
     permissions:
       contents: write
@@ -58,7 +65,12 @@ jobs:
     needs: build-and-publish
     # Version is empty when the reusable workflow skipped the build (no YAML
     # change), in which case nothing new was published.
-    if: needs.build-and-publish.outputs.version != ''
+    if: github.ref == 'refs/heads/main' && needs.build-and-publish.outputs.version != ''
+    # Same environment as the main publish, so its deployment protection
+    # rules apply to this redeploy too.
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     permissions:
       pages: write
       id-token: write
@@ -106,6 +118,7 @@ jobs:
           retention-days: 1
 
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v5
         with:
           artifact_name: github-pages-legacy-${{ github.run_attempt }}
