@@ -168,6 +168,8 @@ binary_sensor:
       then:
         - lambda: |-
             if (millis() - id(button_press_timestamp) >= 10000) {
+              //Turn Prevent Sleep On
+              id(prevent_sleep).turn_on();
               // Remove Wifi
               id(factory_reset_switch).turn_on();
             }
