@@ -66,8 +66,8 @@ jobs:
     # Version is empty when the reusable workflow skipped the build (no YAML
     # change), in which case nothing new was published.
     if: github.ref == 'refs/heads/main' && needs.build-and-publish.outputs.version != ''
-    # Same environment as the main publish, so its deployment protection
-    # rules apply to this redeploy too.
+    # Deploy through the github-pages environment so its deployment
+    # protection rules (e.g. a main-only branch policy) apply to this redeploy.
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
