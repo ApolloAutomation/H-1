@@ -14,6 +14,13 @@ on:
   # release:
   #   types: [published]
 
+# The legacy-manifest job below redeploys the site a second time. Run one
+# build at a time so an older run's redeploy cannot land after a newer
+# run's publish and roll the site back.
+concurrency:
+  group: build-and-publish-pages
+  cancel-in-progress: false
+
 jobs:
   build-and-publish:
     uses: ApolloAutomation/Workflows/.github/workflows/build.yml@main
@@ -37,7 +44,8 @@ jobs:
       installer-path: static
   # Firmware 25.11.26.1 and earlier (H-1.yaml on main) polls
   # https://apolloautomation.github.io/H-1/artifact/manifest.json for updates,
-  # but the publish above only serves /firmware/ and /firmare-d/, so those
+  # but the publish above only serves /firmware/ (the D variant's firmare-d
+  # artifact does not match its firmware* download pattern), so those
   # units get a 404 and are never offered a release. Newer firmware polls
   # /firmware/manifest.json. Until the fleet has moved over, redeploy the site
   # that was just published with a copy of firmware/ at artifact/ (the
@@ -64,15 +72,23 @@ jobs:
 
       - name: Add firmware copy at artifact/
         run: |
-          # Take the newest attempt's site artifact (github-pages-<attempt>)
-          # in case of re-runs; skip this job's own github-pages-legacy-*.
-          n=$(find pages-in -mindepth 1 -maxdepth 1 -type d -name 'github-pages-*' -printf '%f\n' \
-            | sed -n 's/^github-pages-\([0-9][0-9]*\)$/\1/p' | sort -n | tail -1)
-          if [ -z "$n" ]; then
-            echo "No github-pages-<attempt> artifact found"
-            exit 1
+          # download-artifact puts each artifact in its own folder only when
+          # the pattern matches more than one. On a normal first attempt
+          # only github-pages-1 exists, so its artifact.tar lands directly
+          # in pages-in/. After a re-run there are several; take the newest
+          # attempt's site (github-pages-<attempt>) and skip this job's own
+          # github-pages-legacy-*.
+          if [ -f pages-in/artifact.tar ]; then
+            src="pages-in"
+          else
+            n=$(find pages-in -mindepth 1 -maxdepth 1 -type d -name 'github-pages-*' -printf '%f\n' \
+              | sed -n 's/^github-pages-\([0-9][0-9]*\)$/\1/p' | sort -n | tail -1)
+            if [ -z "$n" ]; then
+              echo "No github-pages-<attempt> artifact found"
+              exit 1
+            fi
+            src="pages-in/github-pages-$n"
           fi
-          src="pages-in/github-pages-$n"
           mkdir site
           tar -xf "$src/artifact.tar" -C site
           if [ ! -f site/firmware/manifest.json ]; then
