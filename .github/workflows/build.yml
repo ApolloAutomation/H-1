@@ -14,8 +14,22 @@ on:
   # release:
   #   types: [published]
 
+# The legacy-manifest job below redeploys the site a second time. Run one
+# build at a time so an older run's redeploy cannot land after a newer
+# run's publish and roll the site back.
+concurrency:
+  group: build-and-publish-pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   build-and-publish:
+    # Only main publishes. A manual run dispatched from another branch would
+    # otherwise replace the live Stable manifests (and the legacy copy below)
+    # with that branch's build.
+    if: github.ref == 'refs/heads/main'
     uses: ApolloAutomation/Workflows/.github/workflows/build.yml@main
     permissions:
       contents: write
@@ -27,7 +41,7 @@ jobs:
       yaml-files: |
         Integrations/ESPHome/H-1.yaml
         Integrations/ESPHome/H-1D.yaml
-      firmware-names: "1:firmware,1D:firmare-d"
+      firmware-names: "1:firmware,1D:firmware-d"
       core-yaml-path: Integrations/ESPHome/Core.yaml
       esphome-version: stable
       # Bypass check if manually triggered with bypass option
@@ -35,3 +49,75 @@ jobs:
       publish-to-pages: true
       has-installer: true
       installer-path: static
+  # Firmware 25.11.26.1 and earlier (H-1.yaml on main) polls
+  # https://apolloautomation.github.io/H-1/artifact/manifest.json for updates,
+  # but the publish above serves H-1 firmware at /firmware/, so those
+  # units get a 404 and are never offered a release. Newer firmware polls
+  # /firmware/manifest.json. Until the fleet has moved over, redeploy the site
+  # that was just published with a copy of firmware/ at artifact/ (the
+  # manifest's ota path is relative, so the copied .bin files sit beside it).
+  # Remove this job once the release that switches to /firmware/ has been out
+  # for at least one release cycle.
+  legacy-manifest:
+    name: Serve legacy /artifact/ manifest
+    runs-on: ubuntu-latest
+    needs: build-and-publish
+    # Version is empty when the reusable workflow skipped the build (no YAML
+    # change), in which case nothing new was published.
+    if: github.ref == 'refs/heads/main' && needs.build-and-publish.outputs.version != ''
+    # Deploy through the github-pages environment so its deployment
+    # protection rules (e.g. a main-only branch policy) apply to this redeploy.
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Download the published Pages artifact
+        uses: actions/download-artifact@v8
+        with:
+          pattern: github-pages-*
+          path: pages-in
+          merge-multiple: false
+
+      - name: Add firmware copy at artifact/
+        run: |
+          # download-artifact puts each artifact in its own folder only when
+          # the pattern matches more than one. On a normal first attempt
+          # only github-pages-1 exists, so its artifact.tar lands directly
+          # in pages-in/. After a re-run there are several; take the newest
+          # attempt's site (github-pages-<attempt>) and skip this job's own
+          # github-pages-legacy-*.
+          if [ -f pages-in/artifact.tar ]; then
+            src="pages-in"
+          else
+            n=$(find pages-in -mindepth 1 -maxdepth 1 -type d -name 'github-pages-*' -printf '%f\n' \
+              | sed -n 's/^github-pages-\([0-9][0-9]*\)$/\1/p' | sort -n | tail -1)
+            if [ -z "$n" ]; then
+              echo "No github-pages-<attempt> artifact found"
+              exit 1
+            fi
+            src="pages-in/github-pages-$n"
+          fi
+          mkdir site
+          tar -xf "$src/artifact.tar" -C site
+          if [ ! -f site/firmware/manifest.json ]; then
+            echo "site/firmware/manifest.json missing; not publishing legacy path"
+            exit 1
+          fi
+          rm -rf site/artifact
+          cp -r site/firmware site/artifact
+          find site -name manifest.json | sort
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          name: github-pages-legacy-${{ github.run_attempt }}
+          path: site
+          retention-days: 1
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-legacy-${{ github.run_attempt }}
